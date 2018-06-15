@@ -43,7 +43,7 @@ function parseGraph(){
 
 function parseSparql(){
 	parseQueryResult = new SparqlParser().parse(sparql_text.value);
-	sparql_json.textContent = JSON.stringify(parseQuery, null, '\t');
+	sparql_json.textContent = JSON.stringify(parseQueryResult, null, '\t');
 	executeQuery();
 }
 
