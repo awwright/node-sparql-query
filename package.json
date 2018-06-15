@@ -1,0 +1,35 @@
+{
+  "name": "sparql-query",
+  "version": "0.0.0",
+  "description": "In-memory SPARQL queries",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/awwright/node-sparql-query.git"
+  },
+  "keywords": [
+    "SPARQL",
+    "RDF"
+  ],
+  "author": "Austin Wright",
+  "license": "Unlicense",
+  "bugs": {
+    "url": "https://github.com/awwright/node-sparql-query/issues"
+  },
+  "homepage": "https://github.com/awwright/node-sparql-query#readme",
+  "devDependencies": {
+    "browserify": "^16.2.2",
+    "mocha": "^5.2.0",
+    "sparqljs": "^2.0.3"
+  },
+  "dependencies": {
+    "rdf": "^4.0.1"
+  }
+}

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" dir="ltr">
+	<head>
+		<meta charset="UTF-8" />
+		<title>About</title>
+		<meta name="description" content="Writing content" />
+		<link rel="stylesheet" type="text/css" href="app.css" />
+		<script type="application/ecmascript" src="app.js"></script>
+	</head>
+	<body>
+		<main>
+			<h1>SPARQL Query Engine</h1>
+			<h2>Graph</h2>
+			<input type="text" id="graph-base" value="http://example.com/" />
+<textarea id="graph-ttl"><![CDATA[
+
+]]></textarea>
+			<pre id="graph-json"></pre>
+			<h2>SPARQL</h2>
+			<textarea id="query-sparql"><![CDATA[
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdfa: <http://www.w3.org/ns/rdfa#>
+SELECT * {
+	?S ?P ?O .
+}
+]]></textarea>
+			<pre id="query-json"></pre>
+			<h2>Results</h2>
+			<pre id="rs-json"></pre>
+			<table>
+			<thead><tr id="rs-head"></tr></thead>
+				<tbody id="rs-body"></tbody>
+			</table>
+		</main>
+	</body>
+</html>
