@@ -82,8 +82,10 @@ function genNegativeUpdateSyntaxTest11(testNode, name){
 	it('NegativeUpdateSyntaxTest11: '+name, function(){});
 }
 function genServiceDescriptionTest(testNode, name){
-	it('ServiceDescriptionTest: '+name, function(){});
+	// Out of scope
+	//it('ServiceDescriptionTest: '+name, function(){});
 }
 function genProtocolTest(testNode, name){
-	it('ProtocolTest: '+name, function(){});
+	// Out of scope
+	//it('ProtocolTest: '+name, function(){});
 }
