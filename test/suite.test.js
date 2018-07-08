@@ -5,6 +5,8 @@ var fs = require('fs');
 var rdf = require('rdf');
 var env = rdf.environment;
 var TurtleParser = rdf.TurtleParser;
+var RDFXMLProcessor = require('rdfxmlprocessor');
+var DOMParser = require('xmldom').DOMParser;
 
 var mf$ = rdf.ns('http://www.w3.org/2001/sw/DataAccess/tests/test-manifest#');
 var qt$ = rdf.ns('http://www.w3.org/2001/sw/DataAccess/tests/test-query#');
@@ -13,7 +15,7 @@ var SparqlParser = require('sparqljs').Parser;
 var evaluateQuery = require('../index.js').evaluateQuery;
 
 var webBase = 'http://www.w3.org/2009/sparql/docs/tests/data-sparql11/';
-var manifestBase = webBase + '/manifest-all.ttl';
+var manifestBase = webBase + 'manifest-all.ttl';
 //var manifestBase = 'file://'+__dirname+'/TurtleTests/manifest.ttl';
 var manifestData = require('fs').readFileSync('test/sparql11-test-suite/manifest-all.ttl', 'UTF-8');
 var manifestParse = TurtleParser.parse(manifestData, manifestBase);
@@ -76,14 +78,27 @@ function genQueryEvaluationTest(testNode, name){
 	var graph_base = 'http://example.com/';
 	it('QueryEvaluationTest: '+name, function(){
       var sparql_text = fs.readFileSync(queryFilename.toString().replace(webBase, __dirname+'/sparql11-test-suite/'), 'UTF-8');
-      var parseQueryResult = new SparqlParser().parse(sparql_text);
+      var parseQueryResult = new SparqlParser({}, graph_base).parse(sparql_text);
       if(dataFilename){
+			dataFilename = dataFilename.toString();
          var data_text = fs.readFileSync(dataFilename.toString().replace(webBase, __dirname+'/sparql11-test-suite/'), 'UTF-8');
-         var parseGraphResult = TurtleParser.parse(data_text, graph_base);
+			if(dataFilename.match(/\.rdf$/)){
+				var document = new DOMParser().parseFromString(data_text);
+				var parser = new RDFXMLProcessor({
+					namedNode: rdf.environment.createNamedNode,
+					quad: rdf.environment.createTriple,
+					literal: rdf.environment.createLiteral
+				});
+				var dataGraphResult = parser.parse(document, dataFilename, dataFilename, function(){});
+			}else if(dataFilename.match(/\.nt/) || dataFilename.match(/\.ttl/)){
+				var dataGraphResult = TurtleParser.parse(data_text, graph_base);
+			}else{
+				throw new Error('Unknown filename format: '+dataFilename);
+			}
       }
       if(resultFilename){
          var result_text = fs.readFileSync(resultFilename.toString().replace(webBase, __dirname+'/sparql11-test-suite/'), 'UTF-8');
-         var parseGraphResult = TurtleParser.parse(result_text, graph_base);
+			var parseResultDocument = new DOMParser().parseFromString(result_text);
       }
    });
 }

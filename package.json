@@ -27,7 +27,9 @@
   "devDependencies": {
     "browserify": "^16.2.2",
     "mocha": "^5.2.0",
-    "sparqljs": "^2.0.3"
+    "rdfxmlprocessor": "0.0.3-alpha",
+    "sparqljs": "^2.0.3",
+    "xmldom": "^0.1.27"
   },
   "dependencies": {
     "rdf": "^4.0.1"
