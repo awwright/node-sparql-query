@@ -11,4 +11,7 @@ describe('Query', function(){
 	it('a function', function(){
 		assert.equal(typeof Query.evaluateQuery, 'function');
 	});
+	it('simple query', function(){
+		assert.equal(typeof Query.evaluateQuery, 'function');
+	});
 });
