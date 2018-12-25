@@ -13,6 +13,7 @@ var qt$ = rdf.ns('http://www.w3.org/2001/sw/DataAccess/tests/test-query#');
 
 var SparqlParser = require('sparqljs').Parser;
 var evaluateQuery = require('../index.js').evaluateQuery;
+var Result = require('../index.js').Result;
 
 var webBase = 'http://www.w3.org/2009/sparql/docs/tests/data-sparql11/';
 var manifestBase = webBase + 'manifest-all.ttl';
@@ -31,48 +32,6 @@ var manifestTests = manifestGraph.getCollection(manifestRest).map(function(m){
 });
 
 function parseResult(doc){
-	if(typeof doc==='string'){
-		doc = new DOMParser().parseFromString(doc);
-	}
-	var results = [];
-	var resultList = doc.getElementsByTagName('result');
-	var bnodeMap = new rdf.BlankNodeMap;
-	for(var i=0; i<resultList.length; i++){
-		var res = {};
-		var result = resultList[i];
-		var bindingList = result.getElementsByTagName('binding');
-		for(var j=0; j<bindingList.length; j++){
-			var binding = bindingList[j];
-			var bindingName = binding.getAttribute('name');
-			var bindingChildren = Array.prototype.filter.call(binding.childNodes, function(n){ return n.nodeType==n.ELEMENT_NODE; });
-			var bindingValue = bindingChildren[0];
-			if(bindingValue===undefined){
-				res[bindingName] = null;
-				continue;
-			}
-			switch(bindingValue.nodeName){
-				case 'literal':
-					res[bindingName] = new rdf.Literal(
-						bindingValue.textContent,
-						bindingValue.getAttribute('language') || null,
-						bindingValue.getAttribute('datatype') || null,
-					);
-					break;
-				case 'uri':
-					res[bindingName] = new rdf.NamedNode(
-						bindingValue.textContent
-					);
-					break;
-				case 'bnode':
-					res[bindingName] = bnodeMap.process(bindingValue.textContent);
-					break;
-				default:
-					throw new Error('Unknown value type '+JSON.stringify(bindingValue.nodeName));
-			}
-		}
-		results.push(res);
-	}
-	return results;
 }
 
 describe('SPARQL test suite', function(){
@@ -148,45 +107,13 @@ function genQueryEvaluationTest(testNode, name){
 			if(resultFilename.match(/\.srx$/)){
 				var resultText = fs.readFileSync(resultFilename, 'UTF-8');
 				var resultDOM = new DOMParser().parseFromString(resultText);
-				var resultExpected = parseResult(resultDOM);
+				var resultExpected = Result.fromDOM(resultDOM);
 				// console.log(parseResultList);
-				assert(Array.isArray(resultExpected));
+				assert(resultExpected);
 			}else if(resultFilename.match(/\.srj$/)){
 				var resultText = fs.readFileSync(resultFilename, 'UTF-8');
-				var resultData = JSON.parse(resultText);
-				var resultVars = resultData.head.vars;
-				var bnodeMap = new rdf.BlankNodeMap;
-				var resultExpected = [];
-				if(resultData.results){
-					resultData.results.bindings.forEach(function(record){
-						var result = {};
-						resultVars.forEach(function(name){
-							var valueData = record[name];
-							if(valueData===undefined){
-								result[name] = null;
-								return;
-							}
-							switch(valueData.type){
-								case 'uri':
-									result[name] = 	new rdf.NamedNode(valueData.value);
-									break;
-								case 'literal':
-									result[name] = 	new rdf.Literal(valueData.value);
-									break;
-								case 'typed-literal':
-									result[name] = 	new rdf.Literal(valueData.value, valueData.datatype);
-									break;
-								case 'bnode':
-									result[name] = 	bnodeMap.process(valueData.value);
-									break;
-								default:
-									throw new Error('Unknown type '+JSON.stringify(valueData.type));
-							}
-						});
-						resultExpected.push(result);
-					});
-					assert(Array.isArray(resultExpected));
-				}
+				var resultExpected = Result.fromJSON(resultText);
+				assert(resultExpected);
 			}else if(resultFilename.match(/\.ttl$/)){
 				var resultText = fs.readFileSync(resultFilename, 'UTF-8');
 				var resultGraph = TurtleParser.parse(resultText, graph_base).graph;
