@@ -36,6 +36,7 @@ function parseResult(doc){
 	}
 	var results = [];
 	var resultList = doc.getElementsByTagName('result');
+	var bnodeMap = new rdf.BlankNodeMap;
 	for(var i=0; i<resultList.length; i++){
 		var res = {};
 		var result = resultList[i];
@@ -45,6 +46,10 @@ function parseResult(doc){
 			var bindingName = binding.getAttribute('name');
 			var bindingChildren = Array.prototype.filter.call(binding.childNodes, function(n){ return n.nodeType==n.ELEMENT_NODE; });
 			var bindingValue = bindingChildren[0];
+			if(bindingValue===undefined){
+				res[bindingName] = null;
+				continue;
+			}
 			switch(bindingValue.nodeName){
 				case 'literal':
 					res[bindingName] = new rdf.Literal(
@@ -57,6 +62,9 @@ function parseResult(doc){
 					res[bindingName] = new rdf.NamedNode(
 						bindingValue.textContent
 					);
+					break;
+				case 'bnode':
+					res[bindingName] = bnodeMap.process(bindingValue.textContent);
 					break;
 				default:
 					throw new Error('Unknown value type '+JSON.stringify(bindingValue.nodeName));
@@ -120,10 +128,14 @@ function genQueryEvaluationTest(testNode, name){
 				var document = new DOMParser().parseFromString(data_text);
 				var parser = new RDFXMLProcessor({
 					namedNode: rdf.environment.createNamedNode,
-					quad: rdf.Quad,
+					quad: rdf.environment.createTriple,
 					literal: rdf.environment.createLiteral
 				});
-				var dataGraphResult = parser.parse(document, dataFilename, dataFilename, function(){});
+				var dataGraphResult = new rdf.Graph;
+				parser.parse(document, dataURI.toString(), dataURI.toString(), function(t){
+					if(t) dataGraphResult.add(t);
+					//else throw new Error();
+				});
 			}else if(dataFilename.match(/\.nt/) || dataFilename.match(/\.ttl/)){
 				var dataGraphResult = TurtleParser.parse(data_text, graph_base).graph;
 				var dataGraph = dataGraphResult.graph;
@@ -134,15 +146,53 @@ function genQueryEvaluationTest(testNode, name){
 		if(resultURI){
 			var resultFilename = resultURI.toString().replace(webBase, __dirname+'/sparql11-test-suite/');
 			if(resultFilename.match(/\.srx$/)){
-				var result_text = fs.readFileSync(resultFilename.toString().replace(webBase, __dirname+'/sparql11-test-suite/'), 'UTF-8');
-				var parseResultDocument = new DOMParser().parseFromString(result_text);
-				var parseResultList = parseResult(parseResultDocument);
+				var resultText = fs.readFileSync(resultFilename, 'UTF-8');
+				var resultDOM = new DOMParser().parseFromString(resultText);
+				var resultExpected = parseResult(resultDOM);
 				// console.log(parseResultList);
-				assert(Array.isArray(parseResultList));
+				assert(Array.isArray(resultExpected));
+			}else if(resultFilename.match(/\.srj$/)){
+				var resultText = fs.readFileSync(resultFilename, 'UTF-8');
+				var resultData = JSON.parse(resultText);
+				var resultVars = resultData.head.vars;
+				var bnodeMap = new rdf.BlankNodeMap;
+				var resultExpected = [];
+				if(resultData.results){
+					resultData.results.bindings.forEach(function(record){
+						var result = {};
+						resultVars.forEach(function(name){
+							var valueData = record[name];
+							if(valueData===undefined){
+								result[name] = null;
+								return;
+							}
+							switch(valueData.type){
+								case 'uri':
+									result[name] = 	new rdf.NamedNode(valueData.value);
+									break;
+								case 'literal':
+									result[name] = 	new rdf.Literal(valueData.value);
+									break;
+								case 'typed-literal':
+									result[name] = 	new rdf.Literal(valueData.value, valueData.datatype);
+									break;
+								case 'bnode':
+									result[name] = 	bnodeMap.process(valueData.value);
+									break;
+								default:
+									throw new Error('Unknown type '+JSON.stringify(valueData.type));
+							}
+						});
+						resultExpected.push(result);
+					});
+					assert(Array.isArray(resultExpected));
+				}
 			}else if(resultFilename.match(/\.ttl$/)){
-				var result_text = fs.readFileSync(resultFilename.toString().replace(webBase, __dirname+'/sparql11-test-suite/'), 'UTF-8');
-				var resultGraph = TurtleParser.parse(result_text, graph_base).graph;
+				var resultText = fs.readFileSync(resultFilename, 'UTF-8');
+				var resultGraph = TurtleParser.parse(resultText, graph_base).graph;
 				assert(resultGraph);
+			}else{
+				throw new Error('Unknown filename format: '+resultFilename);
 			}
 		}
 	});
