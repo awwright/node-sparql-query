@@ -82,9 +82,9 @@ function genQueryEvaluationTest(testNode, name){
 		var parseQueryResult = new SparqlParser({}, graph_base).parse(sparql_text);
 		if(dataURI){
 			var dataFilename = dataURI.toString().replace(webBase, __dirname+'/sparql11-test-suite/');
-			var data_text = fs.readFileSync(dataFilename, 'UTF-8');
+			var dataText = fs.readFileSync(dataFilename, 'UTF-8');
 			if(dataFilename.match(/\.rdf$/)){
-				var document = new DOMParser().parseFromString(data_text);
+				var document = new DOMParser().parseFromString(dataText);
 				var parser = new RDFXMLProcessor({
 					namedNode: rdf.environment.createNamedNode,
 					quad: rdf.environment.createTriple,
@@ -96,7 +96,7 @@ function genQueryEvaluationTest(testNode, name){
 					//else throw new Error();
 				});
 			}else if(dataFilename.match(/\.nt/) || dataFilename.match(/\.ttl/)){
-				var dataGraphResult = TurtleParser.parse(data_text, graph_base);
+				var dataGraphResult = TurtleParser.parse(dataText, graph_base);
 				var dataGraph = dataGraphResult.graph;
 			}else{
 				throw new Error('Unknown filename format: '+dataFilename);
@@ -104,28 +104,30 @@ function genQueryEvaluationTest(testNode, name){
 		}
 		if(expectedURI){
 			var expectedFilename = expectedURI.toString().replace(webBase, __dirname+'/sparql11-test-suite/');
+			var expectedText = fs.readFileSync(expectedFilename, 'UTF-8');
 			if(expectedFilename.match(/\.srx$/)){
-				var expectedText = fs.readFileSync(expectedFilename, 'UTF-8');
 				var expectedDOM = new DOMParser().parseFromString(expectedText);
-				var expectedExpected = Result.fromDOM(expectedDOM);
+				var expectedResult = Result.fromDOM(expectedDOM);
 			}else if(expectedFilename.match(/\.srj$/)){
-				var expectedText = fs.readFileSync(expectedFilename, 'UTF-8');
 				var expectedResult = Result.fromJSON(expectedText);
 				assert(expectedResult);
 			}else if(expectedFilename.match(/\.ttl$/)){
-				var expectedText = fs.readFileSync(expectedFilename, 'UTF-8');
 				var expectedGraph = TurtleParser.parse(expectedText, graph_base).graph;
 				assert(expectedGraph);
 			}else{
 				throw new Error('Unknown filename format: '+expectedFilename);
 			}
-			if(expectedResult){
-				// Now we execute the query to be tested
-				var queryResult = evaluateQuery(dataGraph, parseQueryResult);
-				console.log('expectedResult', expectedResult.results);
-				console.log('queryResult', queryResult);
-				assert(expectedResult.equals(queryResult));
-			}
+		}
+		if(expectedResult){
+			// Now we execute the query to be tested
+			var queryResult = evaluateQuery(dataGraph, parseQueryResult);
+			// console.log('expectedResult', expectedResult.results);
+			// console.log('queryResult', queryResult);
+			assert(expectedResult.equals(queryResult));
+		}else if(expectedGraph){
+			throw new Error('Unimplemented');
+		}else{
+			throw new Error('No expected result found');
 		}
 	});
 }
