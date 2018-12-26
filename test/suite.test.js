@@ -75,7 +75,7 @@ function genQueryEvaluationTest(testNode, name){
 	var actionNode = testNode.rel(mf$('action'));
 	var queryFilename = actionNode.rel(qt$('query')).one();
 	var dataURI = actionNode.rel(qt$('data')).one();
-	var resultURI = testNode.rel(mf$('result')).one();
+	var expectedURI = testNode.rel(mf$('result')).one();
 	var graph_base = 'http://example.com/';
 	it('QueryEvaluationTest: '+name, function(){
 		var sparql_text = fs.readFileSync(queryFilename.toString().replace(webBase, __dirname+'/sparql11-test-suite/'), 'UTF-8');
@@ -90,40 +90,41 @@ function genQueryEvaluationTest(testNode, name){
 					quad: rdf.environment.createTriple,
 					literal: rdf.environment.createLiteral
 				});
-				var dataGraphResult = new rdf.Graph;
+				var dataGraph = new rdf.Graph;
 				parser.parse(document, dataURI.toString(), dataURI.toString(), function(t){
 					if(t) dataGraphResult.add(t);
 					//else throw new Error();
 				});
 			}else if(dataFilename.match(/\.nt/) || dataFilename.match(/\.ttl/)){
-				var dataGraphResult = TurtleParser.parse(data_text, graph_base).graph;
+				var dataGraphResult = TurtleParser.parse(data_text, graph_base);
 				var dataGraph = dataGraphResult.graph;
 			}else{
 				throw new Error('Unknown filename format: '+dataFilename);
 			}
 		}
-		if(resultURI){
-			var resultFilename = resultURI.toString().replace(webBase, __dirname+'/sparql11-test-suite/');
-			if(resultFilename.match(/\.srx$/)){
-				var resultText = fs.readFileSync(resultFilename, 'UTF-8');
-				var resultDOM = new DOMParser().parseFromString(resultText);
-				var resultExpected = Result.fromDOM(resultDOM);
-				// console.log(parseResultList);
-			}else if(resultFilename.match(/\.srj$/)){
-				var resultText = fs.readFileSync(resultFilename, 'UTF-8');
-				var resultExpected = Result.fromJSON(resultText);
-				assert(resultExpected);
-			}else if(resultFilename.match(/\.ttl$/)){
-				var resultText = fs.readFileSync(resultFilename, 'UTF-8');
-				var resultGraph = TurtleParser.parse(resultText, graph_base).graph;
-				assert(resultGraph);
+		if(expectedURI){
+			var expectedFilename = expectedURI.toString().replace(webBase, __dirname+'/sparql11-test-suite/');
+			if(expectedFilename.match(/\.srx$/)){
+				var expectedText = fs.readFileSync(expectedFilename, 'UTF-8');
+				var expectedDOM = new DOMParser().parseFromString(expectedText);
+				var expectedExpected = Result.fromDOM(expectedDOM);
+			}else if(expectedFilename.match(/\.srj$/)){
+				var expectedText = fs.readFileSync(expectedFilename, 'UTF-8');
+				var expectedResult = Result.fromJSON(expectedText);
+				assert(expectedResult);
+			}else if(expectedFilename.match(/\.ttl$/)){
+				var expectedText = fs.readFileSync(expectedFilename, 'UTF-8');
+				var expectedGraph = TurtleParser.parse(expectedText, graph_base).graph;
+				assert(expectedGraph);
 			}else{
-				throw new Error('Unknown filename format: '+resultFilename);
+				throw new Error('Unknown filename format: '+expectedFilename);
 			}
-			if(resultExpected){
+			if(expectedResult){
 				// Now we execute the query to be tested
-				//var testResult = evaluateQuery(dataGraph, parseQueryResult);
-				//assert(resultExpected.equals(testResult));
+				var queryResult = evaluateQuery(dataGraph, parseQueryResult);
+				console.log('expectedResult', expectedResult.results);
+				console.log('queryResult', queryResult);
+				assert(expectedResult.equals(queryResult));
 			}
 		}
 	});
