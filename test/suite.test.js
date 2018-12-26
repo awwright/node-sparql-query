@@ -109,7 +109,6 @@ function genQueryEvaluationTest(testNode, name){
 				var resultDOM = new DOMParser().parseFromString(resultText);
 				var resultExpected = Result.fromDOM(resultDOM);
 				// console.log(parseResultList);
-				assert(resultExpected);
 			}else if(resultFilename.match(/\.srj$/)){
 				var resultText = fs.readFileSync(resultFilename, 'UTF-8');
 				var resultExpected = Result.fromJSON(resultText);
@@ -120,6 +119,11 @@ function genQueryEvaluationTest(testNode, name){
 				assert(resultGraph);
 			}else{
 				throw new Error('Unknown filename format: '+resultFilename);
+			}
+			if(resultExpected){
+				// Now we execute the query to be tested
+				//var testResult = evaluateQuery(dataGraph, parseQueryResult);
+				//assert(resultExpected.equals(testResult));
 			}
 		}
 	});
